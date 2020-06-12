@@ -9,6 +9,9 @@ import getTableCache from "@salesforce/apex/DataTableService.getTableCache";
 import getPushTopic from "@salesforce/apex/DataTableService.getPushTopic";
 import * as tableUtils from "c/tableServiceUtils";
 import * as datatableUtils from "./datatableUtils";
+import { loadStyle } from 'lightning/platformResourceLoader';
+import datatablePicklistUrl from '@salesforce/resourceUrl/datatablePicklist'
+
 import {
   subscribe,
   unsubscribe,
@@ -25,6 +28,14 @@ import {
 // const DELAY = 2000;
 
 export default class Datatable extends LightningElement {
+  renderedCallback() {
+    if (!this.rendered) {
+      loadStyle(this, datatablePicklistUrl);
+      this.rendered = true;
+    }
+  }
+  rendered = false;
+
   /***
    * See README.md
    ***/
@@ -51,6 +62,7 @@ export default class Datatable extends LightningElement {
   @track _enableInfiniteLoading;
   @track _selectedRows = [];
   @track _isLoading = true;
+  @track isLoadingMore = false;
   @track draftValues = [];
   @track data;
   @track _columns;
@@ -210,19 +222,14 @@ export default class Datatable extends LightningElement {
     this._selectedRows = [];
   }
 
-  get datatableLoading() {
-    return this.datatable && this.datatable.isLoading;
-  }
-  set datatableLoading(value) {
-    if (this.datatable) {
-      this.datatable.isLoading = value;
-    }
-  }
 
   @wire(getObjectInfo, { objectApiName: "$sObject" })
   wiredObjectInfo({ error, data }) {
     if (data) {
       this.objectInfo = data;
+      if (this._columns) {
+        this._columns = datatableUtils.addObjectInfo(this._columns, this.objectInfo);
+      }
     } else if (error) {
       this.error(error.statusText + ": " + error.body.message);
     }
@@ -244,6 +251,9 @@ export default class Datatable extends LightningElement {
         data.tableColumns,
         this.fields
       );
+      if (this.objectInfo) {
+        this._columns = datatableUtils.addObjectInfo(this._columns, this.objectInfo);
+      }
       this._columns = datatableUtils.addRowActions(
         this._columns,
         this.rowActions
@@ -268,7 +278,7 @@ export default class Datatable extends LightningElement {
   }
 
   loadMoreData() {
-    this.datatableLoading = true;
+    this.isLoadingMore = true;
     const recordsToLoad = datatableUtils.getNumberOfRecordsToLoad(
       this._offset,
       this.recordsPerBatch,
@@ -285,7 +295,7 @@ export default class Datatable extends LightningElement {
           tableUtils.flattenQueryResult(data.tableData)
         );
         this.data = this.data.concat(data);
-        this.datatableLoading = false;
+        this.isLoadingMore = false;
         this.datatable.selectedRows = this._selectedRows;
         this._offset += data.length;
         if (this._offset >= this.maxRecords || data.length < recordsToLoad) {
@@ -451,6 +461,7 @@ export default class Datatable extends LightningElement {
   }
 
   handleSave(event) {
+    this._isLoading = true;
     let updatePromises = event.detail.draftValues.map((row) => {
       row = {...row};
       for (let key of Object.keys(row)) { // Replace fieldName with editFieldName before performing the update
@@ -463,6 +474,13 @@ export default class Datatable extends LightningElement {
       // let recordForUpdate = generateRecordInputForUpdate({id: row.Id, fields:row},this.objectInfo);
       return updateRecord({ fields: row })
         .then(() => {
+          delete this.errors.rows[row.Id];
+          if (this.datatable && this.datatable.draftValues) {
+            const draftValues = this.datatable.draftValues;
+            const draftIndex = draftValues.find(r => r.Id === row.Id);
+            draftValues.splice(draftIndex, 1);
+            this.datatable.draftValues = [...draftValues];
+          }
           return this.refreshRow(row.Id);
         })
         .catch((error) => {
@@ -502,6 +520,7 @@ export default class Datatable extends LightningElement {
       })
       .then(()=> {
         this.errors = {...this.errors}
+        this._isLoading = false;
       });
     console.log(event);
   }

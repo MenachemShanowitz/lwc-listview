@@ -1,8 +1,8 @@
 import { LightningElement, api, track } from 'lwc';
+
 // import displayTemplate from './display.html';
 // import editTemplate from './edit.html'
-
-export default class DatatablePicklistField extends LightningElement {
+export default class DatatablePicklistField extends LightningElement {    
     @api rowKeyValue;
     @api colKeyValue;
     @api 
@@ -31,6 +31,7 @@ export default class DatatablePicklistField extends LightningElement {
 
     @track editing;
     @track _options;
+    @track _value;
     _editedValue;
     valueToLabelMap={};
     editRendered;
@@ -41,6 +42,7 @@ export default class DatatablePicklistField extends LightningElement {
             this.editRendered = false; 
         } else if (!this.editRendered ) {
             combobox.focus();
+            // combobox.click();
             this.editRendered = true;
         }
     }
@@ -66,6 +68,7 @@ export default class DatatablePicklistField extends LightningElement {
 
     handleChange(event) {
         this._editedValue = event.detail.value;
+        this.handleFocusout();
         // this.template.focus();
     }
 
