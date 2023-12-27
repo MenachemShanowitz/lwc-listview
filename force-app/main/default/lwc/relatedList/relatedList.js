@@ -24,7 +24,7 @@ export default class RelatedList extends LightningElement {
   @api
   get filter() {
     if (this._filter && this.parentRelationship) {
-      return this._filter + ' AND ' + this.parentRelationship;
+      return this.parentRelationship + ' AND ' + this._filter;
     }
     return this._filter || this.parentRelationship;
   }
@@ -78,6 +78,11 @@ export default class RelatedList extends LightningElement {
       return `${this.childRecordField}='${this.parentRecordId}'`;
     }
     return "";
+  }
+
+  // used to render datatable. Important because otherwise, initial query can be very inefficient and cause slow load times
+  get ready() {
+    return !!this.parentRecordId || !this.parentRecordField;
   }
 
   refresh() {

@@ -17,22 +17,24 @@
                 </lightning-button-group>
             </header>
         </div>
-        <div class="slds-card__body" style={customStyle}>        
-            <c-datatable
-            editable={editable}
-            s-object={sObject}
-            fields={fields}
-            sorted-by={sortedBy}
-            sorted-direction={sortedDirection}
-            filter={filter}
-            hide-checkbox-column={hideCheckboxColumn}
-            enable-infinite-loading={enableInfiniteLoading}
-            records-per-batch={recordsPerBatch}
-            initial-records={initialRecords}
-            enable-live-updates={enableLiveUpdates}
-            show-soql={showSoql}
-            >
-            </c-datatable>
+        <div class="slds-card__body" style={customStyle}>    
+            <template if:true={ready}>
+                <c-datatable
+                editable={editable}
+                s-object={sObject}
+                fields={fields}
+                sorted-by={sortedBy}
+                sorted-direction={sortedDirection}
+                filter={filter}
+                hide-checkbox-column={hideCheckboxColumn}
+                enable-infinite-loading={enableInfiniteLoading}
+                records-per-batch={recordsPerBatch}
+                initial-records={initialRecords}
+                enable-live-updates={enableLiveUpdates}
+                show-soql={showSoql}
+                >
+                </c-datatable>
+            </template>
         </div>
     </article>
     <c-modal header-text={addRecordTitle} hide-footer="true" onclose={handleCancel}>
